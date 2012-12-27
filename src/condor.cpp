@@ -128,6 +128,7 @@ struct JobQuery {
             wrapper->CopyFrom(*job);
             retval.append(wrapper);
         }
+        return retval;
     }
 
     ClassAdWrapper *locateLocal()
