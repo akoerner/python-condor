@@ -67,5 +67,7 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(queryCollector_overloads, queryCollector, 1, 3);
 
 BOOST_PYTHON_MODULE(condor)
 {
+    import("classad");
+
     def("query_collector", queryCollector, queryCollector_overloads());
 }
