@@ -2,6 +2,7 @@
 #include "condor_adtypes.h"
 #include "dc_collector.h"
 
+#include <memory>
 #include <boost/python.hpp>
 
 #include "classad_wrapper.h"
@@ -198,11 +199,79 @@ struct Collector {
         return query(ad_type, constraint, list());
     }
 
+    // TODO: this has crappy error handling when there are multiple collectors.
+    void advertise(list ads, const std::string &command_str="UPDATE_AD_GENERIC", bool use_tcp=false)
+    {
+        m_collectors->rewind();
+        Daemon *collector;
+        std::auto_ptr<Sock> sock;
+
+        int command = getCollectorCommandNum(command_str.c_str());
+        if (command == -1)
+        {
+            PyErr_SetString(PyExc_ValueError, ("Invalid command " + command_str).c_str());
+            throw_error_already_set();
+        }
+
+        if (command == UPDATE_STARTD_AD_WITH_ACK)
+        {
+            PyErr_SetString(PyExc_NotImplementedError, "Startd-with-ack protocol is not implemented at this time.");
+        }
+
+        int list_len = len(ads);
+        if (!list_len)
+            return;
+
+        compat_classad::ClassAd ad;
+        while (m_collectors->next(collector))
+        {
+            if(!collector->locate()) {
+                PyErr_SetString(PyExc_ValueError, "Unable to locate collector.");
+                throw_error_already_set();
+            }
+            int list_len = len(ads);
+            sock.reset();
+            for (int i=0; i<list_len; i++)
+            {
+                ClassAdWrapper &wrapper = extract<ClassAdWrapper &>(ads[i]);
+                ad.CopyFrom(wrapper);
+                if (use_tcp)
+                {
+                    if (!sock.get())
+                        sock.reset(collector->startCommand(command,Stream::reli_sock,20));
+                    else
+                    {
+                        sock->encode();
+                        sock->put(command);
+                    }
+                }
+                else
+                {
+                    sock.reset(collector->startCommand(command,Stream::safe_sock,20));
+                }
+                int result = 0;
+                if (sock.get()) {
+                    result += ad.put(*sock);
+                    result += sock->end_of_message();
+                }
+                if (result != 2) {
+                    PyErr_SetString(PyExc_ValueError, "Failed to advertise to collector");
+                    throw_error_already_set();
+                }
+            }
+            sock->encode();
+            sock->put(DC_NOP);
+            sock->end_of_message();
+        }
+    }
+
 private:
 
     CollectorList *m_collectors;
 
 };
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(advertise_overloads, advertise, 1, 3);
 
 void export_collector()
 {
@@ -228,6 +297,12 @@ void export_collector()
             "Query the collector for all ads of a particular type.\n"
             ":param daemon_type: Type of daemon; must be from the DaemonTypes enum.\n"
             ":return: A list of matching ads.")
+        .def("advertise", &Collector::advertise, advertise_overloads(
+            "Advertise a list of ClassAds into the collector.\n"
+            ":param ad_list: A list of ClassAds.\n"
+            ":param command: A command for the collector; defaults to UPDATE_AD_GENERIC;"
+            " other commands, such as UPDATE_STARTD_AD, may require reduced authorization levels.\n"
+            ":param use_tcp: When set to true, updates are sent via TCP."))
         ;
 }
 
