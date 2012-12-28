@@ -38,7 +38,7 @@ using namespace boost::python;
     } \
 
 
-object queryCollector(const std::string &pool, const std::string &constraint="", list attrs=list())
+object queryCollector(const std::string &pool="", const std::string &constraint="", list attrs=list())
 {
     CondorQuery query(ANY_AD);
     if (constraint.length())
@@ -57,8 +57,18 @@ object queryCollector(const std::string &pool, const std::string &constraint="",
         query.setDesiredAttrs(&attrs_char[0]);
     }
     ClassAdList adList;
-    //CondorError errStack;
-    QueryResult result = query.fetchAds(adList, pool.c_str(), NULL);
+
+    QueryResult result;
+    if (pool.length())
+    {
+        result = query.fetchAds(adList, pool.c_str(), NULL);
+    }
+    else
+    {
+        CollectorList * collectors = CollectorList::create();
+        result = collectors->query(query, adList, NULL);
+        delete collectors;
+    }
 
     PARSE_COLLECTOR_QUERY_ERRORS(result);
 
@@ -74,11 +84,39 @@ object queryCollector(const std::string &pool, const std::string &constraint="",
     return retval;
 }
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(queryCollector_overloads, queryCollector, 1, 3);
+// Overloads for queryCollector; can't be done in boost.python and provide
+// docstrings.
+object queryCollector0()
+{
+    return queryCollector();
+}
+object queryCollector1(const std::string &pool)
+{
+    return queryCollector(pool);
+}
+object queryCollector2(const std::string &pool, const std::string &constraint)
+{
+    return queryCollector(pool, constraint);
+}
+object queryCollector3(const std::string &pool, const std::string &constraint, list attrs)
+{
+    return queryCollector(pool, constraint, attrs);
+}
 
 struct JobQuery {
 
-    object run(ClassAdWrapper &scheddLocation, const std::string &constraint="", list attrs=list())
+    // Silly functions below are so Python can figure out the overloads.
+    // BOOST.python can do this ... but then docstrings break :(
+    object run1(const ClassAdWrapper &scheddLocation)
+    {
+        return run(scheddLocation);
+    }
+    object run2(const ClassAdWrapper &scheddLocation, const std::string &constraint)
+    {
+        return run(scheddLocation, constraint);
+    }
+
+    object run(const ClassAdWrapper &scheddLocation, const std::string &constraint="", list attrs=list())
     {
         CondorQ q;
 
@@ -226,19 +264,52 @@ struct JobQuery {
         return retval;
     }
 
-    BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(run_overloads, run, 1, 3);
 };
+
 
 BOOST_PYTHON_MODULE(condor)
 {
+    scope().attr("__doc__") = "Utilities for interacting with the HTCondor system.";
+
     import("classad");
 
-    def("query_collector", queryCollector, queryCollector_overloads());
+    docstring_options local_docstring_options(true, false, false);
 
-    class_<JobQuery>("JobQuery")
-        .def("run", &JobQuery::run, JobQuery::run_overloads())
-        .def("locateLocal", &JobQuery::locateLocal, return_value_policy<manage_new_object>())
-        .def("locate", &JobQuery::locate)
-        .def("locateAll", &JobQuery::locateAll)
+    def("query_collector", queryCollector0);
+    def("query_collector", queryCollector1);
+    def("query_collector", queryCollector2);
+    def("query_collector", queryCollector3);
+    def("query_collector", queryCollector,
+        "Query the contents of a collector.\n"
+        ":param pool: Name of pool; if not specified, uses the local one.\n"
+        ":param constraint: A constraint for the ad query; defaults to true.\n"
+        ":param attrs: A list of attributes; if specified, the returned ads will be "
+        "projected along these attributes.\n"
+        ":return: A list of ads in the collector matching the constraint.");
+
+    class_<JobQuery>("JobQuery", "Class for querying an HTCondor schedd.", init<>())
+        .def("run", &JobQuery::run1)
+        .def("run", &JobQuery::run2)
+        .def("run", &JobQuery::run,
+            "Run a query against a schedd.\n"
+            ":param schedd: A ClassAd containing the location information for the schedd"
+            " (use one of the locate methods to generate the location information).\n"
+            ":param constraint: An expression specifying a constraint for the ClassAd query."
+            "  All returned jobs will match this constraint.  Defaults to true.\n"
+            ":param attribute_list: A list of attributes; returned ClassAds will only "
+            "contain these attributes plus a minimal set of defaults.\n"
+            ":return: A list of jobs in the schedd matching the constraints.\n")
+        .def("locateLocal", &JobQuery::locateLocal, return_value_policy<manage_new_object>(),
+            "Locate the local schedd using the local HTCondor configuration.\n"
+            ":return: A ClassAd describing the local schedd's location.")
+        .def("locate", &JobQuery::locate,
+            "Locate a schedd with a given name and pool.\n"
+            ":param pool: A hostname of the pool to query.\n"
+            ":param name: The name of the schedd to locate.\n"
+            ":return: A ClassAd describing the local schedd's location.\n")
+        .def("locateAll", &JobQuery::locateAll,
+            "Locate all schedds in a given pool.\n"
+            ":param pool: A hostname of the pool to query.\n"
+            ":return: A list of ClassAds describing schedd locations.\n")
         ;
 }
