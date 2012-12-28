@@ -37,5 +37,13 @@ Type "help", "copyright", "credits" or "license" for more information.
 63
 >>> results[0]
 [ MyType = "Job"; TargetType = "Machine"; ServerTime = 1356722353; ClusterId = 674143; ProcId = 0; CurrentTime = time() ]
+>>> condor.param["COLLECTOR_HOST"]
+'hcc-briantest.unl.edu'
+>>> schedd = condor.Schedd() # Defaults to the local schedd.
+>>> results = schedd.query()
+>>> results[0]["RequestMemory"]
+ifthenelse(MemoryUsage isnt undefined,MemoryUsage,( ImageSize + 1023 ) / 1024)
+>>> results[0]["RequestMemory"].eval()
+1L
 >>>
 

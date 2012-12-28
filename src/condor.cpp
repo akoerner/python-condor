@@ -13,6 +13,7 @@ BOOST_PYTHON_MODULE(condor)
 
     docstring_options local_docstring_options(true, false, false);
 
+    export_config();
     export_daemon_and_ad_types();
     export_collector();
     export_schedd();
