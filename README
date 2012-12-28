@@ -22,33 +22,20 @@ Python 2.6.6 (r266:84292, Jun 18 2012, 09:57:52)
 [GCC 4.4.6 20110731 (Red Hat 4.4.6-3)] on linux2
 Type "help", "copyright", "credits" or "license" for more information.
 >>> import condor
->>> results = condor.query_collector("red-condor.unl.edu", "true", ["Name"])
->>> print len(results)
-4130
->>> print results[0]
-
-    [
-        Name = "Nebraska T2@red-condor.unl.edu"; 
-        MyType = "Collector"; 
-        CurrentTime = time()
-    ]
->>> results = condor.query_collector("red-condor.unl.edu", 'MyType =?= "Scheduler"', ["Name"])
->>> print results[0]
-
-    [
-        Name = "red-gw1.unl.edu"; 
-        MyType = "Scheduler"; 
-        NumUsers = 21; 
-        CurrentTime = time()
-    ]
->>> query = condor.JobQuery()
->>> schedd = query.locate("red-condor.unl.edu", "red-gw1.unl.edu")
->>> schedd["ScheddIpAddr"]
-'<129.93.239.132:53020>'
->>> results = query.run(schedd, 'Owner =?= "cmsprod088"', ["ClusterId", "ProcID"])
+>>> coll = condor.Collector("red-condor.unl.edu")
+>>> results = coll.query(condor.AdTypes.Startd, "true", ["Name"])
 >>> len(results)
-439
+3812
 >>> results[0]
-[ MyType = "Job"; TargetType = "Machine"; ServerTime = 1356662680; ClusterId = 670932; ProcID = 0; CurrentTime = time() ]
+[ Name = "slot1@red-d20n35"; MyType = "Machine"; TargetType = "Job"; CurrentTime = time() ]
+>>> scheddAd = coll.locate(condor.DaemonTypes.Schedd, "red-gw1.unl.edu")
+>>> scheddAd["ScheddIpAddr"]
+'<129.93.239.132:53020>'
+>>> schedd = condor.Schedd(scheddAd)
+>>> results = schedd.query('Owner =?= "cmsprod088"', ["ClusterId", "ProcId"])
+>>> len(results)
+63
+>>> results[0]
+[ MyType = "Job"; TargetType = "Machine"; ServerTime = 1356722353; ClusterId = 674143; ProcId = 0; CurrentTime = time() ]
 >>>
 
