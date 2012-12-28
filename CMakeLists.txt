@@ -40,6 +40,9 @@ include_directories(${PYTHON_CLASSAD_INCLUDES})
 
 add_library(condor SHARED
         src/condor.cpp
+        src/daemon_and_ad_types.cpp
+        src/collector.cpp
+        src/schedd.cpp
     )
 # Note we change the library prefix to produce "testboost" instead of
 # "libtestboost", following python convention.

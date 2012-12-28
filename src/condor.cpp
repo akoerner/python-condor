@@ -8,6 +8,8 @@
 #include <classad/classad.h>
 #include <boost/python.hpp>
 
+#include "export_headers.h"
+
 using namespace boost::python;
 
 #define PARSE_COLLECTOR_QUERY_ERRORS(result) \
@@ -319,4 +321,8 @@ BOOST_PYTHON_MODULE(condor)
             ":param pool: A hostname of the pool to query.\n"
             ":return: A list of ClassAds describing schedd locations.\n")
         ;
+
+    export_daemon_and_ad_types();
+    export_collector();
+    export_schedd();
 }
