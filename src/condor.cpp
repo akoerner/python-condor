@@ -38,22 +38,26 @@ using namespace boost::python;
     } \
 
 
-object queryCollector(const std::string &pool="", const std::string &constraint="", list attrs=list())
+object queryCollector(const std::string &pool, const std::string &constraint, list attrs)
 {
     CondorQuery query(ANY_AD);
     if (constraint.length())
     {
         query.addANDConstraint(constraint.c_str());
     }
+    std::vector<const char *> attrs_char;
+    std::vector<std::string> attrs_str;
     if (len(attrs))
     {
-        std::vector<std::string> attrs_str; attrs_str.reserve(len(attrs));
-        for (int i=0; i<len(attrs); i++)
-            attrs_str[i] = extract<std::string>(attrs[i]);
-        std::vector<const char *> attrs_char; attrs_char.reserve(len(attrs)+1);
+        attrs_str.reserve(len(attrs));
+        attrs_char.reserve(len(attrs)+1);
         attrs_char[len(attrs)] = NULL;
-        for (std::vector<std::string>::const_iterator it=attrs_str.begin(); it!=attrs_str.end(); it++)
-            attrs_char[0] = it->c_str();
+        for (int i=0; i<len(attrs); i++)
+        {
+            std::string str = extract<std::string>(attrs[i]);
+            attrs_str.push_back(str);
+            attrs_char[i] = attrs_str[i].c_str();
+        }
         query.setDesiredAttrs(&attrs_char[0]);
     }
     ClassAdList adList;
@@ -88,15 +92,15 @@ object queryCollector(const std::string &pool="", const std::string &constraint=
 // docstrings.
 object queryCollector0()
 {
-    return queryCollector();
+    return queryCollector("", "", list());
 }
 object queryCollector1(const std::string &pool)
 {
-    return queryCollector(pool);
+    return queryCollector(pool, "", list());
 }
 object queryCollector2(const std::string &pool, const std::string &constraint)
 {
-    return queryCollector(pool, constraint);
+    return queryCollector(pool, constraint, list());
 }
 object queryCollector3(const std::string &pool, const std::string &constraint, list attrs)
 {
@@ -132,11 +136,14 @@ struct JobQuery {
             throw_error_already_set();
         }
 
-        StringList attrs_list;
+        StringList attrs_list(NULL, "\n");
+        // Must keep strings alive; StringList does not create an internal copy.
+        std::vector<std::string> attrs_str; attrs_str.reserve(len(attrs));
         for (int i=0; i<len(attrs); i++)
         {
             std::string attrName = extract<std::string>(attrs[i]);
-            attrs_list.append(attrName.c_str());
+            attrs_str.push_back(attrName);
+            attrs_list.append(attrs_str[i].c_str());
         }
 
         ClassAdList jobs;
@@ -219,7 +226,7 @@ struct JobQuery {
 
     object locate(const std::string & pool, const std::string &name)
     {
-        std::string constraint = ATTR_NAME " == '" + name + "'";
+        std::string constraint = ATTR_NAME " =?= \"" + name + "\"";
         list result = locateConstrained(pool, constraint);
         if (len(result) >= 1) {
             return result[0];

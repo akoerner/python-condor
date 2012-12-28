@@ -1,0 +1,54 @@
+
+INTRODUCTION
+
+This python wrapper module contains a mechanisms for interacting with the
+HTCondor system.
+
+BUILDING
+
+cmake .
+make
+
+Note the following environment or CMake variables are required to build:
+- CONDOR_DIR - path to top-level directory of the HTCondor source code.
+- PYTHON_CLASSAD_DIR - path to the top-level directory of the python-classad
+  library.  This is not necessary if python-classad is installed in system
+  locations.
+
+USAGE
+
+[bbockelm@example python-condor]$ python
+Python 2.6.6 (r266:84292, Jun 18 2012, 09:57:52) 
+[GCC 4.4.6 20110731 (Red Hat 4.4.6-3)] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import condor
+>>> results = condor.query_collector("red-condor.unl.edu", "true", ["Name"])
+>>> print len(results)
+4130
+>>> print results[0]
+
+    [
+        Name = "Nebraska T2@red-condor.unl.edu"; 
+        MyType = "Collector"; 
+        CurrentTime = time()
+    ]
+>>> results = condor.query_collector("red-condor.unl.edu", 'MyType =?= "Scheduler"', ["Name"])
+>>> print results[0]
+
+    [
+        Name = "red-gw1.unl.edu"; 
+        MyType = "Scheduler"; 
+        NumUsers = 21; 
+        CurrentTime = time()
+    ]
+>>> query = condor.JobQuery()
+>>> schedd = query.locate("red-condor.unl.edu", "red-gw1.unl.edu")
+>>> schedd["ScheddIpAddr"]
+'<129.93.239.132:53020>'
+>>> results = query.run(schedd, 'Owner =?= "cmsprod088"', ["ClusterId", "ProcID"])
+>>> len(results)
+439
+>>> results[0]
+[ MyType = "Job"; TargetType = "Machine"; ServerTime = 1356662680; ClusterId = 670932; ProcID = 0; CurrentTime = time() ]
+>>>
+
