@@ -22,6 +22,7 @@ Python 2.6.6 (r266:84292, Jun 18 2012, 09:57:52)
 [GCC 4.4.6 20110731 (Red Hat 4.4.6-3)] on linux2
 Type "help", "copyright", "credits" or "license" for more information.
 >>> import condor
+>>> import classad
 >>> coll = condor.Collector("red-condor.unl.edu")
 >>> results = coll.query(condor.AdTypes.Startd, "true", ["Name"])
 >>> len(results)
@@ -45,5 +46,33 @@ Type "help", "copyright", "credits" or "license" for more information.
 ifthenelse(MemoryUsage isnt undefined,MemoryUsage,( ImageSize + 1023 ) / 1024)
 >>> results[0]["RequestMemory"].eval()
 1L
->>>
+>>> ad=classad.parse(open("test.submit.ad"))
+>>> print schedd.submit(ad, 2) # Submits two jobs in the cluster; edit test.submit.ad to preference.
+110
+>>> print schedd.act(condor.JobAction.Remove, ["111.0", "110.0"])'
 
+    [
+        TotalNotFound = 0; 
+        TotalPermissionDenied = 0; 
+        TotalAlreadyDone = 0; 
+        TotalJobAds = 2; 
+        TotalSuccess = 2; 
+        TotalChangedAds = 1; 
+        TotalBadStatus = 0; 
+        TotalError = 0
+    ]
+>>> print schedd.act(condor.JobAction.Hold, "Owner =?= \"bbockelm\"")'
+
+    [
+        TotalNotFound = 0; 
+        TotalPermissionDenied = 0; 
+        TotalAlreadyDone = 0; 
+        TotalJobAds = 2; 
+        TotalSuccess = 2; 
+        TotalChangedAds = 1; 
+        TotalBadStatus = 0; 
+        TotalError = 0
+    ]
+>>> schedd.edit('Owner =?= "bbockelm"', "Foo", classad.ExprTree('"baz"'))
+>>> schedd.edit(["110.0"], "Foo", '"bar"')
+>>>

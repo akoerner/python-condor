@@ -1,6 +1,7 @@
 
 #include "condor_attributes.h"
 #include "condor_q.h"
+#include "condor_qmgr.h"
 #include "daemon.h"
 #include "daemon_types.h"
 #include "enum_utils.h"
@@ -9,6 +10,7 @@
 #include <boost/python.hpp>
 
 #include "classad_wrapper.h"
+#include "exprtree_wrapper.h"
 
 using namespace boost::python;
 
@@ -218,11 +220,148 @@ struct Schedd {
         return actOnJobs(action, job_spec, object("Python-initiated action."));
     }
 
+    int submit(ClassAdWrapper &wrapper, int count=1)
+    {
+        ConnectionSentry sentry(*this); // Automatically connects / disconnects.
+
+        int cluster = NewCluster();
+        if (cluster < 0)
+        {
+            PyErr_SetString(PyExc_RuntimeError, "Failed to create new cluster.");
+            throw_error_already_set();
+        }
+        ClassAd ad; ad.CopyFrom(wrapper);
+        for (int idx=0; idx<count; idx++)
+        {
+            int procid = NewProc (cluster);
+            if (procid < 0)
+            {
+                PyErr_SetString(PyExc_RuntimeError, "Failed to create new proc id.");
+                throw_error_already_set();
+            }
+            ad.InsertAttr(ATTR_CLUSTER_ID, cluster);
+            ad.InsertAttr(ATTR_PROC_ID, procid);
+
+            classad::ClassAdUnParser unparser;
+            unparser.SetOldClassAd( true );
+            for (classad::ClassAd::const_iterator it = ad.begin(); it != ad.end(); it++)
+            {
+                std::string rhs;
+                unparser.Unparse(rhs, it->second);
+                if (-1 == SetAttribute(cluster, procid, it->first.c_str(), rhs.c_str(), SetAttribute_NoAck))
+                {
+                    PyErr_SetString(PyExc_ValueError, it->first.c_str());
+                    throw_error_already_set();
+                }
+            }
+        }
+
+        return cluster;
+    }
+
+    void edit(object job_spec, std::string attr, object val)
+    {
+        std::vector<int> clusters;
+        std::vector<int> procs;
+        std::string constraint;
+        bool use_ids = false;
+        extract<std::string> constraint_extract(job_spec);
+        if (constraint_extract.check())
+        {
+            constraint = constraint_extract();
+        }
+        else
+        {
+            int id_len = len(job_spec);
+            clusters.reserve(id_len);
+            procs.reserve(id_len);
+            for (int i=0; i<id_len; i++)
+            {
+                object id_list = job_spec[i].attr("split")(".");
+                if (len(id_list) != 2)
+                {
+                    PyErr_SetString(PyExc_ValueError, "Invalid ID");
+                    throw_error_already_set();
+                }
+                clusters.push_back(extract<int>(long_(id_list[0])));
+                procs.push_back(extract<int>(long_(id_list[1])));
+            }
+            use_ids = true;
+        }
+
+        std::string val_str;
+        extract<ExprTreeHolder &> exprtree_extract(val);
+        if (exprtree_extract.check())
+        {
+            classad::ClassAdUnParser unparser;
+            unparser.Unparse(val_str, exprtree_extract().get());
+        }
+        else
+        {
+            val_str = extract<std::string>(val);
+        }
+
+        ConnectionSentry sentry(*this);
+
+        if (use_ids)
+        {
+            for (unsigned idx=0; idx<clusters.size(); idx++)
+            {
+                if (-1 == SetAttribute(clusters[idx], procs[idx], attr.c_str(), val_str.c_str()))
+                {
+                    PyErr_SetString(PyExc_RuntimeError, "Unable to edit job");
+                    throw_error_already_set();
+                }
+            }
+        }
+        else
+        {
+            if (-1 == SetAttributeByConstraint(constraint.c_str(), attr.c_str(), val_str.c_str()))
+            {
+                PyErr_SetString(PyExc_RuntimeError, "Unable to edit jobs matching constraint");
+                throw_error_already_set();
+            }
+        }
+    }
+
 private:
+    struct ConnectionSentry
+    {
+    public:
+        ConnectionSentry(Schedd &schedd) : m_connected(false)
+        {
+            if (ConnectQ(schedd.m_addr.c_str(), 0, false, NULL, NULL, schedd.m_version.c_str()) == 0)
+            {
+                PyErr_SetString(PyExc_RuntimeError, "Failed to connect to schedd.");
+                throw_error_already_set();
+            }
+            m_connected = true;
+        }
+
+        void disconnect()
+        {
+            if (m_connected && !DisconnectQ(NULL))
+            {
+                m_connected = false;
+                PyErr_SetString(PyExc_RuntimeError, "Failed to commmit and disconnect from queue.");
+                throw_error_already_set();
+            }
+            m_connected = false;
+        }
+
+        ~ConnectionSentry()
+        {
+            disconnect();
+        }
+    private:
+        bool m_connected;
+    };
+
     std::string m_addr, m_name, m_version;
 };
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(query_overloads, query, 0, 2);
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(submit_overloads, submit, 1, 2);
 
 void export_schedd()
 {
@@ -248,6 +387,14 @@ void export_schedd()
             ":param action: Action to perform; must be from enum JobAction.\n"
             ":param job_spec: Job specification; can either be a list of job IDs or a string specifying a constraint to match jobs.\n"
             ":return: Number of jobs changed.")
+        .def("submit", &Schedd::submit, submit_overloads("Submit one or more jobs to the HTCondor schedd.\n"
+            ":param ad: ClassAd describing job cluster.\n"
+            ":param count: Number of jobs to submit to cluster.\n"
+            ":return: Newly created cluster ID."))
+        .def("edit", &Schedd::edit, "Edit one or more jobs in the queue.\n"
+            ":param job_spec: Either a list of jobs (CLUSTER.PROC) or a string containing a constraint to match jobs against.\n"
+            ":param attr: Attribute name to edit.\n"
+            ":param value: The new value of the job attribute; should be a string (which will be converted to a ClassAds expression) or a ClassAds expression.");
         ;
 }
 
