@@ -1,0 +1,30 @@
+[
+Err = "test.err";
+WhenToTransferOutput = "ON_EXIT";
+TargetType = "Machine";
+Cmd = "/home/cse496/bbockelm/tmp/condor/test.sh";
+JobUniverse = 5;
+TransferIn = false;
+Iwd = "/home/cse496/bbockelm/tmp/condor";
+Owner = "bbockelm";
+Requirements = ( TARGET.Arch == "X86_64" ) && ( TARGET.OpSys == "LINUX" ) && ( TARGET.Disk >= RequestDisk ) && ( TARGET.Memory >= RequestMemory ) && ( ( TARGET.HasFileTransfer ) || ( TARGET.FileSystemDomain == MY.FileSystemDomain ) );
+JobNotification = 0;
+WantRemoteSyscalls = false;
+JobLeaseDuration = 1200;
+StreamOut = false;
+OnExitRemove = true;
+In = "/dev/null";
+MyType = "Job";
+FileSystemDomain = "hcc-briantest.unl.edu";
+Arguments = "";
+Out = "test.out";
+UserLog = "/home/cse496/bbockelm/tmp/condor/test.log";
+RequestMemory = 15;
+ShouldTransferFiles = "IF_NEEDED";
+QDate = 1356740598;
+JobStatus = 1;
+ImageSize = 1;
+JobPrio = 0;
+RemoteUserCpu = 0;
+RequestDisk = 1;
+]
