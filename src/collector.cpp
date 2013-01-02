@@ -5,6 +5,7 @@
 #include <memory>
 #include <boost/python.hpp>
 
+#include "old_boost.h"
 #include "classad_wrapper.h"
 
 using namespace boost::python;
@@ -61,12 +62,13 @@ struct Collector {
         }
         std::vector<const char *> attrs_char;
         std::vector<std::string> attrs_str;
-        if (len(attrs))
+        int len_attrs = py_len(attrs);
+        if (len_attrs)
         {
-            attrs_str.reserve(len(attrs));
-            attrs_char.reserve(len(attrs)+1);
-            attrs_char[len(attrs)] = NULL;
-            for (int i=0; i<len(attrs); i++)
+            attrs_str.reserve(len_attrs);
+            attrs_char.reserve(len_attrs+1);
+            attrs_char[len_attrs] = NULL;
+            for (int i=0; i<len_attrs; i++)
             {
                 std::string str = extract<std::string>(attrs[i]);
                 attrs_str.push_back(str);
@@ -127,7 +129,7 @@ struct Collector {
     {
         std::string constraint = ATTR_NAME " =?= \"" + name + "\"";
         object result = query(convert_to_ad_type(d_type), constraint, list());
-        if (len(result) >= 1) {
+        if (py_len(result) >= 1) {
             return result[0];
         }
         PyErr_SetString(PyExc_ValueError, "Unable to find daemon.");
@@ -218,7 +220,7 @@ struct Collector {
             PyErr_SetString(PyExc_NotImplementedError, "Startd-with-ack protocol is not implemented at this time.");
         }
 
-        int list_len = len(ads);
+        int list_len = py_len(ads);
         if (!list_len)
             return;
 
@@ -229,7 +231,7 @@ struct Collector {
                 PyErr_SetString(PyExc_ValueError, "Unable to locate collector.");
                 throw_error_already_set();
             }
-            int list_len = len(ads);
+            int list_len = py_len(ads);
             sock.reset();
             for (int i=0; i<list_len; i++)
             {

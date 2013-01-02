@@ -9,9 +9,9 @@ FIND_PATH(CONDOR_BASE_INCLUDES condor_includes/condor_common.h
   PATH_SUFFIXES include src/
 )
 
-SET(CONDOR_INCLUDES ${CONDOR_BASE_INCLUDES}/condor_includes ${CONDOR_BASE_INCLUDES}/condor_daemon_client ${CONDOR_BASE_INCLUDES}/condor_io ${CONDOR_BASE_INCLUDES}/condor_utils ${CONDOR_BASE_INCLUDES}/condor_includes)
+SET(CONDOR_INCLUDES ${CONDOR_BASE_INCLUDES}/condor_includes ${CONDOR_BASE_INCLUDES}/condor_daemon_client ${CONDOR_BASE_INCLUDES}/condor_io ${CONDOR_BASE_INCLUDES}/condor_utils ${CONDOR_BASE_INCLUDES}/condor_includes ${CONDOR_BASE_INCLUDES}/safefile)
 
-FIND_LIBRARY(CONDOR_LIB condor_utils_7_9_3
+FIND_LIBRARY(CONDOR_LIB condor_utils_7_9_4
   HINTS
   ${CONDOR_DIR}
   $ENV{CONDOR_DIR}

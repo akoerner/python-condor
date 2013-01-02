@@ -1,17 +1,20 @@
 
 #include <boost/python.hpp>
 
+#include "old_boost.h"
 #include "export_headers.h"
 
 using namespace boost::python;
+
 
 BOOST_PYTHON_MODULE(condor)
 {
     scope().attr("__doc__") = "Utilities for interacting with the HTCondor system.";
 
-    import("classad");
+    py_import("classad");
 
-    docstring_options local_docstring_options(true, false, false);
+    // TODO: old boost doesn't have this; conditionally compile only one newer systems.
+    //docstring_options local_docstring_options(true, false, false);
 
     export_config();
     export_daemon_and_ad_types();

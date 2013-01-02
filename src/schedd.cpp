@@ -9,6 +9,7 @@
 
 #include <boost/python.hpp>
 
+#include "old_boost.h"
 #include "classad_wrapper.h"
 #include "exprtree_wrapper.h"
 
@@ -69,8 +70,9 @@ struct Schedd {
 
         StringList attrs_list(NULL, "\n");
         // Must keep strings alive; StringList does not create an internal copy.
-        std::vector<std::string> attrs_str; attrs_str.reserve(len(attrs));
-        for (int i=0; i<len(attrs); i++)
+        int len_attrs = py_len(attrs);
+        std::vector<std::string> attrs_str; attrs_str.reserve(len_attrs);
+        for (int i=0; i<len_attrs; i++)
         {
             std::string attrName = extract<std::string>(attrs[i]);
             attrs_str.push_back(attrName);
@@ -124,7 +126,7 @@ struct Schedd {
         }
         else
         {
-            int id_len = len(job_spec);
+            int id_len = py_len(job_spec);
             ids_list.reserve(id_len);
             for (int i=0; i<id_len; i++)
             {
@@ -146,7 +148,7 @@ struct Schedd {
             if (try_extract_tuple.check())
             {
                 reason_tuple = extract<tuple>(reason);
-                if (len(reason_tuple) != 2)
+                if (py_len(reason_tuple) != 2)
                 {
                     PyErr_SetString(PyExc_ValueError, "Hold action requires (hold string, hold code) tuple as the reason.");
                     throw_error_already_set();
@@ -272,13 +274,13 @@ struct Schedd {
         }
         else
         {
-            int id_len = len(job_spec);
+            int id_len = py_len(job_spec);
             clusters.reserve(id_len);
             procs.reserve(id_len);
             for (int i=0; i<id_len; i++)
             {
                 object id_list = job_spec[i].attr("split")(".");
-                if (len(id_list) != 2)
+                if (py_len(id_list) != 2)
                 {
                     PyErr_SetString(PyExc_ValueError, "Invalid ID");
                     throw_error_already_set();
