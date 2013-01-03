@@ -1,6 +1,7 @@
 
 #include "condor_adtypes.h"
 #include "dc_collector.h"
+#include "condor_version.h"
 
 #include <memory>
 #include <boost/python.hpp>
@@ -152,7 +153,7 @@ struct Collector {
             else
             {
                 std::string addr = my_daemon.addr();
-                if (!my_daemon.addr() || !wrapper->InsertAttr(ATTR_SCHEDD_IP_ADDR, addr))
+                if (!my_daemon.addr() || !wrapper->InsertAttr(ATTR_MY_ADDRESS, addr))
                 {
                     PyErr_SetString(PyExc_RuntimeError, "Unable to locate daemon address.");
                     throw_error_already_set();
@@ -173,6 +174,24 @@ struct Collector {
                 if (!wrapper->InsertAttr(ATTR_VERSION, version))
                 {
                     PyErr_SetString(PyExc_RuntimeError, "Unable to insert daemon version.");
+                    throw_error_already_set();
+                }
+                const char * my_type = AdTypeToString(convert_to_ad_type(d_type));
+                if (!my_type)
+                {
+                    PyErr_SetString(PyExc_ValueError, "Unable to determined daemon type.");
+                    throw_error_already_set();
+                }
+                std::string my_type_str = my_type;
+                if (!wrapper->InsertAttr(ATTR_MY_TYPE, my_type_str))
+                {
+                    PyErr_SetString(PyExc_RuntimeError, "Unable to insert daemon type.");
+                    throw_error_already_set();
+                }
+                std::string cversion = CondorVersion(); std::string platform = CondorPlatform();
+                if (!wrapper->InsertAttr(ATTR_VERSION, cversion) || !wrapper->InsertAttr(ATTR_PLATFORM, platform))
+                {
+                    PyErr_SetString(PyExc_RuntimeError, "Unable to insert HTCondor version.");
                     throw_error_already_set();
                 }
             }

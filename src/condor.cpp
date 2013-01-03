@@ -20,4 +20,5 @@ BOOST_PYTHON_MODULE(condor)
     export_daemon_and_ad_types();
     export_collector();
     export_schedd();
+    export_dc_tool();
 }

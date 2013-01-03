@@ -1,6 +1,7 @@
 
 #include "condor_common.h"
 #include "condor_config.h"
+#include "condor_version.h"
 
 #include <boost/python.hpp>
 
@@ -36,9 +37,15 @@ struct Param
     }
 };
 
+std::string CondorVersionWrapper() { return CondorVersion(); }
+
+std::string CondorPlatformWrapper() { return CondorPlatform(); }
+
 void export_config()
 {
     config();
+    def("version", CondorVersionWrapper, "Returns the version of HTCondor this module is linked against.");
+    def("platform", CondorPlatformWrapper, "Returns the platform of HTCondor this module is running on.");
     def("reload_config", config, "Reload the HTCondor configuration from disk.");
     class_<Param>("_Param")
         .def("__getitem__", &Param::getitem)

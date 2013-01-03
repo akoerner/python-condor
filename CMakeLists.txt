@@ -43,6 +43,7 @@ add_library(condor SHARED
         src/collector.cpp
         src/schedd.cpp
         src/config.cpp
+        src/dc_tool.cpp
     )
 # Note we change the library prefix to produce "testboost" instead of
 # "libtestboost", following python convention.

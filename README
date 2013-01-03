@@ -75,4 +75,11 @@ ifthenelse(MemoryUsage isnt undefined,MemoryUsage,( ImageSize + 1023 ) / 1024)
     ]
 >>> schedd.edit('Owner =?= "bbockelm"', "Foo", classad.ExprTree('"baz"'))
 >>> schedd.edit(["110.0"], "Foo", '"bar"')
->>>
+>>> coll = condor.Collector()
+>>> master_ad = coll.locate(condor.DaemonTypes.Master)
+>>> condor.send_command(master_ad, condor.DaemonCommands.Reconfig) # Reconfigures the local master and all children
+>>> condor.version()
+'$CondorVersion: 7.9.4 Jan 02 2013 PRE-RELEASE-UWCS $'
+>>> condor.platform()
+'$CondorPlatform: X86_64-ScientificLinux_6.3 $'
+>>> 
