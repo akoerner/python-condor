@@ -19,6 +19,8 @@ void export_daemon_and_ad_types()
 
     enum_<AdTypes>("AdTypes")
         .value("None", NO_AD)
+        .value("Any", ANY_AD)
+        .value("Generic", GENERIC_AD)
         .value("Startd", STARTD_AD)
         .value("Schedd", SCHEDD_AD)
         .value("Master", MASTER_AD)
