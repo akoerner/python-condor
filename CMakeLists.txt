@@ -44,6 +44,7 @@ add_library(condor SHARED
         src/schedd.cpp
         src/config.cpp
         src/dc_tool.cpp
+        src/secman.cpp
     )
 # Note we change the library prefix to produce "testboost" instead of
 # "libtestboost", following python convention.

@@ -21,4 +21,5 @@ BOOST_PYTHON_MODULE(condor)
     export_collector();
     export_schedd();
     export_dc_tool();
+    export_secman();
 }
