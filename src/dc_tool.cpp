@@ -46,7 +46,6 @@ void send_command(const ClassAdWrapper & ad, DaemonCommands dc, const std::strin
     int ad_type = AdTypeFromString(ad_type_str.c_str());
     if (ad_type == NO_AD)
     {
-        printf("ad type %s.\n", ad_type_str.c_str());
         PyErr_SetString(PyExc_ValueError, "Unknown ad type.");
         throw_error_already_set();
     }
